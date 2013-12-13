@@ -127,3 +127,36 @@ class TestMailtankClient(object):
 
         assert project.name == 'Pumpurum'
         assert project.from_email == 'no-reply@pumpurum.ru'
+
+    @httpretty.httprettified
+    def test_create_layout(self):
+        request_bodies = []
+
+        def request_callback(request, uri, headers):
+            request_bodies.append(request.body)
+            id = json.loads(request.body).get('id', '42adf23e')
+            return (200, headers, json.dumps({'id': id}))
+        httpretty.register_uri(
+            httpretty.POST, 'http://api.mailtank.ru/layouts/',
+            body=request_callback, content_type='text/json')
+
+        layout = self.m.create_layout('name', 'subject-markup', 'markup')
+        assert json.loads(request_bodies.pop()) == {
+            u'subject_markup': u'subject-markup',
+            u'markup': u'markup',
+            u'name': u'name'
+        }
+        assert layout.id == '42adf23e'
+
+        layout = self.m.create_layout(
+            'name', 'subject-markup', 'markup',
+            plaintext_markup='plaintext-markup', base='base-id', id='123')
+        assert json.loads(request_bodies.pop()) == {
+            u'subject_markup': u'subject-markup',
+            u'name': u'name',
+            u'plaintext_markup': u'plaintext-markup',
+            u'markup': u'markup',
+            u'base': u'base-id',
+            u'id': u'123'
+        }
+        assert layout.id == '123'
