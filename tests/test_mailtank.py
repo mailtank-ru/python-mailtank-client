@@ -51,18 +51,6 @@ PAGES_DATA = [{
     'pages_total': 3,
 }]
 
-MAILING_DATA = {
-    'eta': None,
-    'id': 16,
-    'status': 'ENQUEUED',
-    'url': '/mailings/16',
-}
-
-PROJECT_DATA = {
-    'name': 'Pumpurum',
-    'from_email': 'no-reply@pumpurum.ru',
-}
-
 
 class TestMailtankClient(object):
     def setup_method(self, method):
@@ -87,18 +75,34 @@ class TestMailtankClient(object):
 
     @httpretty.httprettified
     def test_create_mailing(self):
+        request_bodies = []
+
+        def request_callback(request, uri, headers):
+            request_bodies.append(request.body)
+            return (200, headers, json.dumps({
+                'eta': None,
+                'id': 16,
+                'status': 'ENQUEUED',
+                'url': '/mailings/16',
+            }))
         httpretty.register_uri(
             httpretty.POST, 'http://api.mailtank.ru/mailings/',
-            responses=[httpretty.Response(body=json.dumps(MAILING_DATA),
-                                          status=200,
+            responses=[httpretty.Response(body=request_callback,
                                           content_type='text/json'),
-                       httpretty.Response(body='',
-                                          status=500)])
+                       httpretty.Response(body='', status=500)])
 
         mailing = self.m.create_mailing('e25388fde8',
                                         {'name': 'Max'},
                                         {'tags': ['asdf'],
                                          'unsubscribe_tags': ['asdf']})
+        assert json.loads(request_bodies.pop()) == {
+            u'layout_id': u'e25388fde8',
+            u'target': {
+                u'unsubscribe_tags': [u'asdf'],
+                u'tags': [u'asdf']
+            },
+            u'context': {u'name': u'Max'}
+        }
 
         assert mailing.id == 16
         assert mailing.url == '/mailings/16'
@@ -114,7 +118,10 @@ class TestMailtankClient(object):
     def test_get_project(self):
         httpretty.register_uri(
             httpretty.GET, 'http://api.mailtank.ru/project',
-            body=json.dumps(PROJECT_DATA))
+            body=json.dumps({
+                'name': 'Pumpurum',
+                'from_email': 'no-reply@pumpurum.ru',
+            }))
 
         project = self.m.get_project()
 

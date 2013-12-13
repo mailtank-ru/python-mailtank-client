@@ -49,18 +49,25 @@ class Mailtank(object):
         self._logger.debug('PUT %s with %s', url, kwargs)
         return self._session.put(url, **kwargs)
 
+    def _get_endpoint(self, endpoint, **kwargs):
+        url = urljoin(self._api_url, endpoint)
+        return self._json(self._get(url, **kwargs))
+
+    def _post_endpoint(self, endpoint, data, **kwargs):
+        url = urljoin(self._api_url, endpoint)
+        return self._json(self._post(url, data=json.dumps(data), **kwargs))
+
     def get_tags(self, mask=None):
         # TODO Не загружать все страницы сразу, возвращать итератор по тегам,
         # который будет подгружать страницы по мере необходимости
 
         def fetch_page(n):
-            return self._json(self._get(
-                urljoin(self._api_url, 'tags/'),
-                params={
+            return self._get_endpoint(
+                'tags/', params={
                     'mask': mask,
-                    # API Mailtank считает страницы с единицы
+                    # Mailtank API считает страницы с единицы
                     'page': current_page + 1,
-                }))
+                })
 
         # Первая страница есть всегда; необходимо запросить её вне цикла
         # затем, чтобы узнать общее количество страниц
@@ -79,8 +86,11 @@ class Mailtank(object):
         return rv
 
     def get_project(self):
-        """Возвращает текущий проект :class:`Project`"""
-        response = self._json(self._get(urljoin(self._api_url, 'project')))
+        """Возвращает текущий проект.
+
+        :rtype: :class:`Project`
+        """
+        response = self._get_endpoint('project')
         return Project(response)
 
     def create_mailing(self, layout_id, context, target, attachments=None):
@@ -107,10 +117,7 @@ class Mailtank(object):
         if attachments is not None:
             data['attachments'] = attachments
 
-        response = self._json(self._post(
-            urljoin(self._api_url, 'mailings/'),
-            data=json.dumps(data)))
-
+        response = self._post_endpoint('mailings/', data)
         return Mailing(response)
 
     def create_layout(self, name, subject_markup, markup, plaintext_markup=None,
@@ -128,8 +135,8 @@ class Mailtank(object):
 
         :param plaintext_markup: разметка текстовой версии шаблона
         :type plaintext_markup: str
-        :param base: идентификатор родительского базового шаблона
 
+        :param base: идентификатор родительского базового шаблона
         :type base: str
 
         :param id: идентификатор шаблона
@@ -149,8 +156,5 @@ class Mailtank(object):
         if id is not None:
             data['id'] = id
 
-        response = self._json(self._post(
-            urljoin(self._api_url, 'layouts/'),
-            data=json.dumps(data)))
-
+        response = self._post_endpoint('layouts/', data)
         return Layout(response)
