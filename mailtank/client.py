@@ -93,21 +93,50 @@ class Mailtank(object):
         response = self._get_endpoint('project')
         return Project(response)
 
+    def create_subscriber(self, email, id=None, tags=None, properties=None):
+        """Создаёт подписчика.
+
+        :param email: email-адрес подписчика
+        :type email: строка
+
+        :param id: идентификатор подписчика
+        :type id: строка
+
+        :param tags: список тегов подписчика
+        :type tags: список строк
+
+        :param properties: словарь со свойствами подписчика
+
+        :rtype: :class:`Subscriber`
+        """
+        data = {
+            'email': email,
+        }
+        if id is not None:
+            data['id'] = id
+        if tags is not None:
+            data['tags'] = tags
+        if properties is not None:
+            data['properties'] = properties
+
+        response = self._post_endpoint('subscribers/', data)
+        return Subscriber(response)
+
     def create_mailing(self, layout_id, context, target, attachments=None):
-        """Создает и выполняет рассылку Mailtank. Возвращает :class:`Mailing`
+        """Создает и выполняет рассылку.
+
         :param layout_id: идентификатор шаблона, который будет
                           использован для рассылки
-        :type layout_id: str
+        :type layout_id: строка
 
         :param context: словарь, содержащий данные рассылки. Должен
                         удовлетворять структуре используемого шаблона
-        :type context: dict
 
         :param target: словарь, задающий получателей рассылки.
-        :type target: dict
 
-        :param attachments: (опционально) список словарей, описывающих вложения
-        :type attachments: list
+        :param attachments: список словарей, описывающих вложения
+
+        :rtype: :class:`Mailing`
         """
         data = {
             'context': context,
@@ -122,25 +151,25 @@ class Mailtank(object):
 
     def create_layout(self, name, subject_markup, markup, plaintext_markup=None,
                       base=None, id=None):
-        """Создает шаблон в Mailtank.
+        """Создает шаблон.
 
         :param name: имя шаблона
-        :type name: str
+        :type name: строка
 
         :param subject_markup: разметка темы шаблоны
-        :type subject_markup: str
+        :type subject_markup: строка
 
         :param markup: разметка тела шаблона
-        :type markup: str
+        :type markup: строка
 
         :param plaintext_markup: разметка текстовой версии шаблона
-        :type plaintext_markup: str
+        :type plaintext_markup: строка
 
         :param base: идентификатор родительского базового шаблона
-        :type base: str
+        :type base: строка
 
         :param id: идентификатор шаблона
-        :type id: str
+        :type id: строка
 
         :rtype: :class:`Layout`
         """
