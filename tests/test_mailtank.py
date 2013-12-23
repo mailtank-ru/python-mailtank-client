@@ -223,3 +223,40 @@ class TestMailtankClient(object):
             u'id': u'123'
         }
         assert layout.id == '123'
+
+    @httpretty.httprettified
+    def test_update_subscriber(self):
+        def request_callback(request, uri, headers):
+            page = int(furl.furl(uri).args['page'])
+            return (200, headers, json.dumps(SUBSCRIBERS_DATA[page - 1]))
+
+        httpretty.register_uri(
+            httpretty.GET, 'http://api.mailtank.ru/subscribers/',
+            body=request_callback)
+        
+        subscriber = list(self.m.get_subscribers())[0]
+
+        requests = []
+        first_subscriber_data = SUBSCRIBERS_DATA[0]['objects'][0]
+        def request_callback(request, uri, headers):
+            data = json.loads(request.body)
+            requests.append(data)
+            return (200, headers, json.dumps(dict(first_subscriber_data, **data)))
+        httpretty.register_uri(
+            httpretty.PUT,
+            'http://api.mailtank.ru/subscribers/{}'.format(first_subscriber_data['id']),
+            body=request_callback)
+
+        subscriber.save()
+        last_request = requests.pop()
+        assert last_request['tags'] == subscriber.tags
+        assert last_request['properties'] == subscriber.properties
+        assert last_request['email'] == subscriber.email
+        
+        subscriber.email = 'john@doe.com'
+        subscriber.tags = ['example']
+        subscriber.save()
+        last_request = requests.pop()
+        assert last_request['tags'] == subscriber.tags
+        assert last_request['properties'] == subscriber.properties
+        assert last_request['email'] == subscriber.email

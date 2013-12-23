@@ -1,32 +1,41 @@
 # coding: utf-8
-class Tag(object):
-    def __init__(self, data):
-        self.name = data.get('name')
+class Model(object):
+    fields = ()
+
+    def __init__(self, data, client=None):
+        self._client = client
+        for field in self.fields:
+            setattr(self, field, data.get(field))
+
+    def to_dict(self):
+        rv = {}
+        for field in self.fields:
+            rv[field] = getattr(self, field)
+        return rv
 
 
-class Mailing(object):
-    def __init__(self, data):
-        self.id = data.get('id')
-        self.url = data.get('url')
-        self.eta = data.get('eta')
-        self.status = data.get('status')
+class Tag(Model):
+    fields = ('name',)
 
 
-class Layout(object):
-    def __init__(self, data):
-        self.id = data.get('id')
+class Mailing(Model):
+    fields = ('id', 'url', 'eta', 'status')
 
 
-class Project(object):
-    def __init__(self, data):
-        self.name = data.get('name')
-        self.from_email = data.get('from_email')
+class Layout(Model):
+    fields = ('id',)
 
 
-class Subscriber(object):
-    def __init__(self, data):
-        self.id = data.get('id')
-        self.email = data.get('email')
-        self.does_email_exist = data.get('does_email_exist')
-        self.properties = data.get('properties')
-        self.tags = data.get('tags')
+class Project(Model):
+    fields = ('name', 'from_email')
+
+
+class Subscriber(Model):
+    fields = ('id', 'url', 'email', 'does_email_exist', 'properties', 'tags')
+
+    def save(self):
+        data = self.to_dict()
+        del data['id']
+        del data['url']
+        del data['does_email_exist']
+        self._client.update_subscriber(self.id, **data)

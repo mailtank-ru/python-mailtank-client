@@ -107,7 +107,8 @@ class Mailtank(object):
                     # Mailtank API считает страницы с единицы
                     'page': n + 1,
                 })
-        return MailtankIterator(fetch_page, Tag, start=start, end=end)
+        wrapper = lambda *args, **kwargs: Tag(*args, client=self, **kwargs)
+        return MailtankIterator(fetch_page, wrapper, start=start, end=end)
 
     def get_subscribers(self, query=None, start=0, end=None):
         def fetch_page(n):
@@ -116,7 +117,8 @@ class Mailtank(object):
                     'query': query,
                     'page': n + 1,
                 })
-        return MailtankIterator(fetch_page, Subscriber, start=start, end=end)
+        wrapper = lambda *args, **kwargs: Subscriber(*args, client=self, **kwargs)
+        return MailtankIterator(fetch_page, wrapper, start=start, end=end)
 
     def get_project(self):
         """Возвращает текущий проект.
@@ -124,7 +126,7 @@ class Mailtank(object):
         :rtype: :class:`Project`
         """
         response = self._get_endpoint('project')
-        return Project(response)
+        return Project(response, client=self)
 
     def create_subscriber(self, email, id=None, tags=None, properties=None):
         """Создаёт подписчика.
@@ -153,7 +155,7 @@ class Mailtank(object):
             data['properties'] = properties
 
         response = self._post_endpoint('subscribers/', data)
-        return Subscriber(response)
+        return Subscriber(response, client=self)
 
     def update_subscriber(self, id, email=None, tags=None, properties=None):
         """Обновляет данные подписчика."""
@@ -165,8 +167,7 @@ class Mailtank(object):
         if properties is not None:
             data['properties'] = properties
 
-        response = self._put_endpoint('subscribers/{}'.format(id), data)
-        return Subscriber(response)
+        self._put_endpoint('subscribers/{}'.format(id), data)
 
     def create_mailing(self, layout_id, context, target, attachments=None):
         """Создает и выполняет рассылку.
@@ -193,7 +194,7 @@ class Mailtank(object):
             data['attachments'] = attachments
 
         response = self._post_endpoint('mailings/', data)
-        return Mailing(response)
+        return Mailing(response, client=self)
 
     def create_layout(self, name, subject_markup, markup, plaintext_markup=None,
                       base=None, id=None):
@@ -232,4 +233,4 @@ class Mailtank(object):
             data['id'] = id
 
         response = self._post_endpoint('layouts/', data)
-        return Layout(response)
+        return Layout(response, client=self)
