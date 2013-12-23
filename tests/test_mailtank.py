@@ -52,6 +52,49 @@ PAGES_DATA = [{
 }]
 
 
+SUBSCRIBERS_DATA = [{
+    'objects': [
+        {
+            'does_email_exist': True,
+            'tags': ['rss:lala:http://lala.ru/lala:100'],
+            'url': '/subscribers/c9a454f096',
+            'email': 'anthony.romanovich@gmail.com',
+            'id': 'c9a454f096',
+            'properties': {}
+        }, {
+            'does_email_exist': True,
+            'tags': ['rmnvch'],
+            'url': '/subscribers/2eda62b980',
+            'email': 'rmnvch@yandex.ru',
+            'id': '2eda62b980',
+            'properties': {}
+        }
+    ],
+    'pages_total': 1,
+    'page': 1
+}]
+
+
+class TestMailtankIterator(object):
+    def test_basics(self):
+        def fetch_page(n):
+            return PAGES_DATA[n]
+
+        def assert_len(expected_len, **kwargs):
+            it = mailtank.client.MailtankIterator(fetch_page, **kwargs)
+            assert len(list(it)) == expected_len
+
+        assert_len(start=19, end=25, expected_len=6)
+        assert_len(start=18, end=23, expected_len=5)
+        assert_len(start=4, end=21, expected_len=17)
+        assert_len(start=0, end=0, expected_len=0)
+        assert_len(start=26, expected_len=1)
+        assert_len(start=100, expected_len=0)
+        assert_len(start=100, end=10000, expected_len=0)
+        assert_len(start=0, expected_len=27)
+        assert_len(expected_len=27)
+
+
 class TestMailtankClient(object):
     def setup_method(self, method):
         self.m = mailtank.Mailtank('http://api.mailtank.ru', 'pumpurum')
@@ -66,12 +109,32 @@ class TestMailtankClient(object):
             httpretty.GET, 'http://api.mailtank.ru/tags/',
             body=request_callback)
 
-        tags = self.m.get_tags()
+        tags = list(self.m.get_tags())
 
         assert len(tags) == sum(len(page['objects']) for page in PAGES_DATA)
         assert tags[0].name == 'type_main_news'
         assert tags[5].name == 'tag_11592'
         assert tags[-1].name == 'tag_23564'
+
+    @httpretty.httprettified
+    def test_get_subscribers(self):
+        def request_callback(method, uri, headers):
+            page = int(furl.furl(uri).args['page'])
+            return (200, headers, json.dumps(SUBSCRIBERS_DATA[page - 1]))
+
+        httpretty.register_uri(
+            httpretty.GET, 'http://api.mailtank.ru/subscribers/',
+            body=request_callback)
+
+        subscribers = list(self.m.get_subscribers())
+
+        assert len(subscribers) == sum(len(page['objects']) for page in SUBSCRIBERS_DATA)
+
+        for i, subscriber_data in enumerate(SUBSCRIBERS_DATA[0]['objects']):
+            for key, value in subscriber_data.iteritems():
+                if key == 'url':
+                    continue
+                assert getattr(subscribers[i], key) == value
 
     @httpretty.httprettified
     def test_create_mailing(self):

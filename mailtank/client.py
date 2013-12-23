@@ -1,12 +1,50 @@
 # coding: utf-8
+import sys
 import json
 import logging
 from urlparse import urljoin
 
 import requests
 
-from .models import Tag, Mailing, Layout, Project
+from .models import Tag, Mailing, Layout, Project, Subscriber
 from .exceptions import MailtankError
+
+
+ident = lambda x: x
+
+
+class MailtankIterator(object):
+    def __init__(self, fetch_page, wrapper=ident, start=0, end=None):
+        self._fetch_page = fetch_page
+        self._start = start
+        self._end = end
+        self._wrapper = wrapper
+
+    def __iter__(self):
+        first_page_data = self._fetch_page(0)
+        pages_total = first_page_data['pages_total']
+        objects_per_page = len(first_page_data['objects'])
+
+        start_page = self._start / objects_per_page
+        if start_page >= pages_total:
+            return
+
+        if self._end is None:
+            limit = sys.maxint
+        else:
+            limit = self._end - self._start
+        to_skip = self._start - start_page * objects_per_page
+        current_page = start_page
+
+        while current_page < pages_total and limit > 0:
+            yielded = 0
+            page_data = self._fetch_page(current_page)
+            for obj in page_data['objects'][to_skip:to_skip+limit]:
+                yield self._wrapper(obj)
+                yielded += 1
+            current_page += 1
+            limit -= yielded
+            to_skip = 0
 
 
 class Mailtank(object):
@@ -57,33 +95,28 @@ class Mailtank(object):
         url = urljoin(self._api_url, endpoint)
         return self._json(self._post(url, data=json.dumps(data), **kwargs))
 
-    def get_tags(self, mask=None):
-        # TODO Не загружать все страницы сразу, возвращать итератор по тегам,
-        # который будет подгружать страницы по мере необходимости
+    def _put_endpoint(self, endpoint, data, **kwargs):
+        url = urljoin(self._api_url, endpoint)
+        return self._json(self._put(url, data=json.dumps(data), **kwargs))
 
+    def get_tags(self, mask=None, start=0, end=None):
         def fetch_page(n):
             return self._get_endpoint(
                 'tags/', params={
                     'mask': mask,
                     # Mailtank API считает страницы с единицы
-                    'page': current_page + 1,
+                    'page': n + 1,
                 })
+        return MailtankIterator(fetch_page, Tag, start=start, end=end)
 
-        # Первая страница есть всегда; необходимо запросить её вне цикла
-        # затем, чтобы узнать общее количество страниц
-        current_page = 0
-        first_page = fetch_page(current_page)
-        pages_total = first_page['pages_total']
-        rv = map(Tag, first_page['objects'])
-
-        # Начинаем цикл со второй страницы, так как первую уже обработали
-        current_page = 1
-        while current_page < pages_total:
-            page = fetch_page(current_page)
-            rv += map(Tag, page['objects'])
-            current_page += 1
-
-        return rv
+    def get_subscribers(self, query=None, start=0, end=None):
+        def fetch_page(n):
+            return self._get_endpoint(
+                'subscribers/', params={
+                    'query': query,
+                    'page': n + 1,
+                })
+        return MailtankIterator(fetch_page, Subscriber, start=start, end=end)
 
     def get_project(self):
         """Возвращает текущий проект.
@@ -120,6 +153,19 @@ class Mailtank(object):
             data['properties'] = properties
 
         response = self._post_endpoint('subscribers/', data)
+        return Subscriber(response)
+
+    def update_subscriber(self, id, email=None, tags=None, properties=None):
+        """Обновляет данные подписчика."""
+        data = {}
+        if email is not None:
+            data['email'] = email
+        if tags is not None:
+            data['tags'] = tags
+        if properties is not None:
+            data['properties'] = properties
+
+        response = self._put_endpoint('subscribers/{}'.format(id), data)
         return Subscriber(response)
 
     def create_mailing(self, layout_id, context, target, attachments=None):
