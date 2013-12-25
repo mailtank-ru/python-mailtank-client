@@ -27,6 +27,8 @@ class MailtankIterator(object):
         first_page_data = self._fetch_page(0)
         pages_total = first_page_data['pages_total']
         objects_per_page = len(first_page_data['objects'])
+        if objects_per_page == 0:
+            return
 
         start_page = self._start / objects_per_page
         if start_page >= pages_total:

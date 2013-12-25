@@ -94,6 +94,15 @@ class TestMailtankIterator(object):
         assert_len(start=0, expected_len=27)
         assert_len(expected_len=27)
 
+    def test_empty_iterator(self):
+        it = mailtank.client.MailtankIterator(lambda n: {
+            'page': 1,
+            'pages_total': 1,
+            'total': 0,
+            'objects': [],
+        })
+        assert not list(it)
+
 
 class TestMailtankClient(object):
     def setup_method(self, method):
@@ -233,7 +242,7 @@ class TestMailtankClient(object):
         httpretty.register_uri(
             httpretty.GET, 'http://api.mailtank.ru/subscribers/',
             body=request_callback)
-        
+
         subscriber = list(self.m.get_subscribers())[0]
 
         requests = []
@@ -252,7 +261,7 @@ class TestMailtankClient(object):
         assert last_request['tags'] == subscriber.tags
         assert last_request['properties'] == subscriber.properties
         assert last_request['email'] == subscriber.email
-        
+
         subscriber.email = 'john@doe.com'
         subscriber.tags = ['example']
         subscriber.save()
@@ -265,9 +274,9 @@ class TestMailtankClient(object):
     def test_delete_subscriber(self):
         httpretty.register_uri(
             httpretty.DELETE, 'http://api.mailtank.ru/subscribers/sw2fas')
-        
+
         self.m.delete_subscriber('sw2fas')
-        
+
         last_request = httpretty.last_request()
         assert last_request.method == 'DELETE'
         assert last_request.path == '/subscribers/sw2fas'
