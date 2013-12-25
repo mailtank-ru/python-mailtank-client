@@ -260,3 +260,14 @@ class TestMailtankClient(object):
         assert last_request['tags'] == subscriber.tags
         assert last_request['properties'] == subscriber.properties
         assert last_request['email'] == subscriber.email
+
+    @httpretty.httprettified
+    def test_delete_subscriber(self):
+        httpretty.register_uri(
+            httpretty.DELETE, 'http://api.mailtank.ru/subscribers/sw2fas')
+        
+        self.m.delete_subscriber('sw2fas')
+        
+        last_request = httpretty.last_request()
+        assert last_request.method == 'DELETE'
+        assert last_request.path == '/subscribers/sw2fas'

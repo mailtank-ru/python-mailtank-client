@@ -20,6 +20,9 @@ class MailtankIterator(object):
         self._end = end
         self._wrapper = wrapper
 
+    def get_total_count(self):
+        return self._fetch_page(0)['total']
+
     def __iter__(self):
         first_page_data = self._fetch_page(0)
         pages_total = first_page_data['pages_total']
@@ -59,13 +62,13 @@ class Mailtank(object):
         })
         self._logger = logging.getLogger(__name__)
 
-    def _delete(self, url, **kwargs):
-        self._logger.debug('DELETE %s with %s', url, kwargs)
-        return self._session.delete(url, **kwargs)
-
-    def _json(self, response):
+    def _check_response(self, response):
         if not 200 <= response.status_code < 400:
             raise MailtankError(response)
+        return response
+
+    def _json(self, response):
+        response = self._check_response(response)
         try:
             return response.json()
         except ValueError:
@@ -87,6 +90,10 @@ class Mailtank(object):
         self._logger.debug('PUT %s with %s', url, kwargs)
         return self._session.put(url, **kwargs)
 
+    def _delete(self, url, **kwargs):
+        self._logger.debug('DELETE %s with %s', url, kwargs)
+        return self._session.delete(url, **kwargs)
+
     def _get_endpoint(self, endpoint, **kwargs):
         url = urljoin(self._api_url, endpoint)
         return self._json(self._get(url, **kwargs))
@@ -98,6 +105,10 @@ class Mailtank(object):
     def _put_endpoint(self, endpoint, data, **kwargs):
         url = urljoin(self._api_url, endpoint)
         return self._json(self._put(url, data=json.dumps(data), **kwargs))
+
+    def _delete_endpoint(self, endpoint, **kwargs):
+        url = urljoin(self._api_url, endpoint)
+        return self._check_response(self._delete(url, **kwargs))
 
     def get_tags(self, mask=None, start=0, end=None):
         def fetch_page(n):
@@ -168,6 +179,10 @@ class Mailtank(object):
             data['properties'] = properties
 
         self._put_endpoint('subscribers/{}'.format(id), data)
+
+    def delete_subscriber(self, id):
+        """Удаляет подписчика."""
+        self._delete_endpoint('subscribers/{}'.format(id))
 
     def create_mailing(self, layout_id, context, target, attachments=None):
         """Создает и выполняет рассылку.
