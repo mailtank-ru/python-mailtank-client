@@ -168,6 +168,11 @@ class Mailtank(object):
         response = self._post_endpoint('subscribers/', data)
         return Subscriber(response, client=self)
 
+    def get_subscriber(self, id):
+        """Возвращает подписчика."""
+        return Subscriber(self._get_endpoint('subscribers/{}'.format(id)),
+                          client=self)
+
     def update_subscriber(self, id, email=None, tags=None, properties=None):
         """Обновляет данные подписчика."""
         data = {}
