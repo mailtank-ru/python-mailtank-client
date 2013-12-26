@@ -280,3 +280,21 @@ class TestMailtankClient(object):
         last_request = httpretty.last_request()
         assert last_request.method == 'DELETE'
         assert last_request.path == '/subscribers/sw2fas'
+
+    @httpretty.httprettified
+    def test_reassign_tag(self):
+        httpretty.register_uri(
+            httpretty.PATCH, 'http://api.mailtank.ru/subscribers/')
+
+        self.m.reassign_tag('qwerty', ['id1', 'id2'])
+
+        last_request = httpretty.last_request()
+        assert last_request.method == 'PATCH'
+        assert last_request.path == '/subscribers/'
+        assert json.loads(last_request.body) == {
+            'action': 'reassign_tag',
+            'data': {
+                'tag': 'qwerty',
+                'subscribers': ['id1', 'id2'],
+            }
+        }

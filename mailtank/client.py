@@ -108,6 +108,10 @@ class Mailtank(object):
         url = urljoin(self._api_url, endpoint)
         return self._json(self._put(url, data=json.dumps(data), **kwargs))
 
+    def _patch_endpoint(self, endpoint, data, **kwargs):
+        url = urljoin(self._api_url, endpoint)
+        return self._check_response(self._patch(url, data=json.dumps(data), **kwargs))
+
     def _delete_endpoint(self, endpoint, **kwargs):
         url = urljoin(self._api_url, endpoint)
         return self._check_response(self._delete(url, **kwargs))
@@ -190,6 +194,20 @@ class Mailtank(object):
     def delete_subscriber(self, id):
         """Удаляет подписчика."""
         self._delete_endpoint('subscribers/{}'.format(id))
+
+    def reassign_tag(self, tag, subscribers):
+        """Переназначает тег `tag` подписчикам, указанным в `subscribers`.
+
+        :param tag: строка с именем тега
+        :param target: строка "all" или список идентификаторов подписчиков
+        """
+        self._patch_endpoint('subscribers/', {
+            'action': 'reassign_tag',
+            'data': {
+                'subscribers': subscribers,
+                'tag': tag,
+            },
+        })
 
     def create_mailing(self, layout_id, context, target, attachments=None):
         """Создает и выполняет рассылку.
