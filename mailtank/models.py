@@ -38,4 +38,8 @@ class Subscriber(Model):
         del data['id']
         del data['url']
         del data['does_email_exist']
-        self._client.update_subscriber(self.id, **data)
+        if self.id:
+            self._client.update_subscriber(self.id, **data)
+        else:
+            self._client.create_subscriber(
+                self.email, tags=self.tags, properties=self.properties)
