@@ -176,7 +176,7 @@ class Mailtank(object):
 
     def get_subscriber(self, id):
         """Возвращает подписчика."""
-        return Subscriber(self._get_endpoint('subscribers/{}'.format(id)),
+        return Subscriber(self._get_endpoint('subscribers/{0}'.format(id)),
                           client=self)
 
     def update_subscriber(self, id, email=None, tags=None, properties=None):
@@ -189,11 +189,11 @@ class Mailtank(object):
         if properties is not None:
             data['properties'] = properties
 
-        self._put_endpoint('subscribers/{}'.format(id), data)
+        self._put_endpoint('subscribers/{0}'.format(id), data)
 
     def delete_subscriber(self, id):
         """Удаляет подписчика."""
-        self._delete_endpoint('subscribers/{}'.format(id))
+        self._delete_endpoint('subscribers/{0}'.format(id))
 
     def reassign_tag(self, tag, subscribers):
         """Переназначает тег `tag` подписчикам, указанным в `subscribers`.
