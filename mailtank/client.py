@@ -274,3 +274,7 @@ class Mailtank(object):
 
         response = self._post_endpoint('layouts/', data)
         return Layout(response, client=self)
+
+    def delete_layout(self, id):
+        """Удаляет шаблон."""
+        self._delete_endpoint('layouts/{0}'.format(id))
