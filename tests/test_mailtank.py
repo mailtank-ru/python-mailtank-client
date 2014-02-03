@@ -253,7 +253,7 @@ class TestMailtankClient(object):
             return (200, headers, json.dumps(dict(first_subscriber_data, **data)))
         httpretty.register_uri(
             httpretty.PUT,
-            'http://api.mailtank.ru/subscribers/{}'.format(first_subscriber_data['id']),
+            'http://api.mailtank.ru/subscribers/{0}'.format(first_subscriber_data['id']),
             body=request_callback)
 
         subscriber.save()
