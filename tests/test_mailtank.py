@@ -1,5 +1,6 @@
 import json
 import pytest
+import datetime as dt
 
 import furl
 import httpretty
@@ -72,6 +73,38 @@ SUBSCRIBERS_DATA = [{
     ],
     'pages_total': 1,
     'page': 1
+}]
+
+
+UNSUBSCRIBES_DATA = [{
+    'total': 4,
+    'pages_total': 1,
+    'page': 1,
+    'objects': [{
+        'mailing_id': 44208,
+        'subscriber_id': 'stenlex@gmail.com',
+        'mailing_unsubscribe_tags': ['subscribeCreditOrder'],
+        'events': [{
+            'created_at': '2014-02-19T07:15:28',
+            'type': 'intent'
+        }],
+    }, {
+        'mailing_id': 21037,
+        'subscriber_id': 'babavto@mail.ru',
+        'mailing_unsubscribe_tags': ['subscribeCreditOrder'],
+        'events': [{
+            'created_at': '2014-02-16T05:18:09',
+            'type': 'action'
+        }],
+    }, {
+        'mailing_id': 21031,
+        'subscriber_id': 'babavto@mail.ru',
+        'mailing_unsubscribe_tags': ['subscribeCreditOrder'],
+        'events': [{
+            'created_at': '2014-02-16T05:18:09',
+            'type': u'action'
+        }],
+    }],
 }]
 
 
@@ -298,3 +331,27 @@ class TestMailtankClient(object):
                 'subscribers': ['id1', 'id2'],
             }
         }
+
+    @httpretty.httprettified
+    def test_get_unsubscribes(self):
+        def request_callback(method, uri, headers):
+            page = int(furl.furl(uri).args['page'])
+            return (200, headers, json.dumps(UNSUBSCRIBES_DATA[page - 1]))
+
+        httpretty.register_uri(
+            httpretty.GET, 'http://api.mailtank.ru/unsubscribed/',
+            body=request_callback)
+
+        unsubscribes = list(self.m.get_unsubscribes())
+
+        assert len(unsubscribes) == sum(len(page['objects']) for page in UNSUBSCRIBES_DATA)
+
+        unsubscribe = unsubscribes[0]
+        assert unsubscribe.mailing_id == 44208
+        assert unsubscribe.subscriber_id == 'stenlex@gmail.com'
+        assert unsubscribe.mailing_unsubscribe_tags == ['subscribeCreditOrder']
+        assert len(unsubscribe.events) == 1
+
+        event = unsubscribe.events[0]
+        assert isinstance(event['created_at'], dt.datetime)
+        assert event['type'] == 'intent'

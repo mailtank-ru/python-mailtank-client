@@ -27,7 +27,7 @@ setup(
     author_email='anthony.romanovich@gmail.com',
 
     packages=['mailtank'],
-    install_requires=['requests>=1.0.3'],
+    install_requires=['requests>=1.0.3', 'python-dateutil>=2.0'],
     tests_require=['pytest', 'httpretty', 'furl'],
     cmdclass = {'test': PyTest},
 )

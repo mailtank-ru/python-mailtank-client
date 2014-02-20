@@ -1,4 +1,7 @@
 # coding: utf-8
+import dateutil.parser
+
+
 class Model(object):
     fields = ()
 
@@ -48,3 +51,8 @@ class Subscriber(Model):
 class Unsubscribe(Model):
     fields = ('mailing_id', 'subscriber_id',
               'mailing_unsubscribe_tags', 'events')
+
+    def __init__(self, data, client=None):
+        super(Unsubscribe, self).__init__(data, client=client)
+        for event in self.events:
+            event['created_at'] = dateutil.parser.parse(event['created_at'])

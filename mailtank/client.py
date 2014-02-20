@@ -294,7 +294,7 @@ class Mailtank(object):
         def fetch_page(n):
             params = {'page': n + 1}
             if since is not None:
-                params['since'] = sinse.isoformat()
+                params['since'] = since.isoformat()
             return self._get_endpoint('unsubscribed/', params=params)
         wrapper = lambda *args, **kwargs: Unsubscribe(*args, client=self, **kwargs)
         return MailtankIterator(fetch_page, wrapper, start=start, end=end)
