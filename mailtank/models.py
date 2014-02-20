@@ -43,3 +43,8 @@ class Subscriber(Model):
         else:
             self._client.create_subscriber(
                 self.email, tags=self.tags, properties=self.properties)
+
+
+class Unsubscribe(Model):
+    fields = ('mailing_id', 'subscriber_id',
+              'mailing_unsubscribe_tags', 'events')

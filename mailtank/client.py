@@ -6,7 +6,7 @@ from urlparse import urljoin
 
 import requests
 
-from .models import Tag, Mailing, Layout, Project, Subscriber
+from .models import Tag, Mailing, Layout, Project, Subscriber, Unsubscribe
 from .exceptions import MailtankError
 
 
@@ -278,3 +278,23 @@ class Mailtank(object):
     def delete_layout(self, id):
         """Удаляет шаблон."""
         self._delete_endpoint('layouts/{0}'.format(id))
+
+    def get_unsubscribes(self, since=None, start=0, end=None):
+        """Возвращает итератор по отпискам.
+
+        :param since: время, начиная с которого перечислять отписки
+        :type since: :class:`datetime.datetime`
+
+        :param start: с которой записи
+        :type start: int
+
+        :param end: по которую
+        :type end: int
+        """
+        def fetch_page(n):
+            params = {'page': n + 1}
+            if since is not None:
+                params['since'] = sinse.isoformat()
+            return self._get_endpoint('unsubscribed/', params=params)
+        wrapper = lambda *args, **kwargs: Unsubscribe(*args, client=self, **kwargs)
+        return MailtankIterator(fetch_page, wrapper, start=start, end=end)
